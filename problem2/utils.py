@@ -6,6 +6,9 @@ from torch_geometric.utils import to_networkx
 import networkx as nx
 import numpy as np
 from community import community_louvain
+import networkx.algorithms as algos
+from networkx.drawing.nx_agraph import graphviz_layout
+import math
 
 #可以随机选取多少个sample进行可视化
 def plot_graph(graph,n_sample=None):
@@ -367,6 +370,58 @@ def draw_graph():
     print("环形网络的直径为：", nx.diameter(G6))
     print("环形网络的diameter为：", nx.diameter(G6))
 
+#绘制出重要节点的图
+def K_core(G,graph, layout='spring_layout',part=None, k=0.3,K=3,with_labels=False):
+    if part != None:
+        y = graph.y.numpy()
+        subnode = []
+        for i in range(len(y)):
+            if y[i] == part:
+                subnode.append(i)
+        G = G.subgraph(subnode)
 
+    if layout=='spring_layout':
+        pos = nx.spring_layout(G,k=k,seed=100)
+    elif layout=='spectral_layout':
+        pos = nx.spectral_layout(G)
+    elif layout=='random_layout':
+        pos = nx.random_layout(G,seed=100)
+    elif layout=='shell_layout':
+        pos = nx.shell_layout(G)
+    elif layout=='circular_layout':
+        pos = nx.circular_layout(G)
+    elif layout=='graphviz_layout':
+        pos=graphviz_layout(G)
+    # 画出初始图
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.set_title("{}-core".format(K))
+    nx.draw(algos.k_core(G, K),pos=pos,node_size=50,alpha=0.8,with_labels = with_labels,linewidths=0,font_size=5)
+    plt.show()
+
+
+def degree_plot(G,title='Cora Dataset'):
+    # Degree
+    # 存储度数相应点数
+    number = []
+    # 存储度数
+    degree = []
+    for i in nx.degree_histogram(G):
+        number.append(i)
+    for j in range(len(nx.degree_histogram(G))):
+        degree.append(j)
+    # 去掉number=0,并取log
+    logxy = {}
+    for i in range(len(degree)):
+        if (number[i] != 0):
+            logxy[math.log(degree[i])] = math.log(number[i])
+
+    # 作图
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.set_title(title)
+    plt.xlabel("log(degree)")
+    plt.ylabel("log(number)")
+    plt.scatter(logxy.keys(), logxy.values(), c="red", s=10)
 
     
